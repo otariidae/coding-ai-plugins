@@ -11,6 +11,10 @@
     {
       "name": "rails-design",
       "source": "./plugins/rails-design"
+    },
+    {
+      "name": "pr-workflow",
+      "source": "./plugins/pr-workflow"
     }
   ]
 }
