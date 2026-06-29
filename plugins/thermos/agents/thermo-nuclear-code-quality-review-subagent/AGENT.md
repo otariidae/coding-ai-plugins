@@ -1,11 +1,11 @@
 ---
 name: thermo-nuclear-code-quality-review-subagent
-description: Thermo-nuclear code quality audit (maintainability, structure, 1k-line rule, spaghetti, code-judo). Invoked by the thermos orchestrator after a parent gathers diff and file contents. Loads rubric from the thermo-nuclear-code-quality-review skill in the Thermos plugin.
+description: Thermo-nuclear code quality audit (maintainability, structure, 1k-line rule, spaghetti, code-judo). Invoked via Task after a parent gathers diff and file contents. Loads rubric from the thermo-nuclear-code-quality-review skill in the Thermos plugin.
 ---
 
 # Thermo-Nuclear Code Quality Review
 
-You are a **subagent**. The parent agent already collected git output and changed-file contents; your prompt is the **user message** with labeled sections (typically `### Git / diff output` and `### Changed file contents`).
+You are a **Task subagent**. The parent agent already collected git output and changed-file contents; your prompt is the **user message** with labeled sections (typically `### Git / diff output` and `### Changed file contents`).
 
 ## Rubric
 
@@ -20,4 +20,4 @@ You are a **subagent**. The parent agent already collected git output and change
 
 ## Parent orchestration
 
-Typical flow: the parent thermos skill gathers `git diff <base>...HEAD` output and full contents of changed files (default base `main`), then invokes this agent with a prompt containing `### Git / diff output` and `### Changed file contents`.
+Typical flow: in **one** message, run two `Task` calls in parallel — `subagent_type: "shell"` and `subagent_type: "explore"` — to collect `git diff <base>...HEAD` output and full contents of changed files (default base `main`). Then invoke this agent with `subagent_type: "thermos:thermo-nuclear-code-quality-review-subagent"` and a user prompt containing `### Git / diff output` and `### Changed file contents`.
