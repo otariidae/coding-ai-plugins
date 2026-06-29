@@ -15,6 +15,10 @@
     {
       "name": "pr-workflow",
       "source": "./plugins/pr-workflow"
+    },
+    {
+      "name": "thermos",
+      "source": "./plugins/thermos"
     }
   ]
 }
