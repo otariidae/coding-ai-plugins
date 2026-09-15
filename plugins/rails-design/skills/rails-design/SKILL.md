@@ -75,6 +75,7 @@ Railsのモデル設計の壁打ち相手・レビュアーとして振る舞う
 
 **concernは行数ではなく関心で切る**（`Post::Publishable`。`Post::Associations` のような機構分割はしない）。
 **横断concernは直接includeしない**（同名のモデル固有concernを挟んで `include ::Searchable`）。
+**PORO は `Xxx.new(主語).動詞` が既定**。クラスメソッドだけ・`module_function`・`call` にしない（形の詳細は `logic-placement.md`「PORO の書き方」）。
 
 詳細は `references/logic-placement.md`。
 
@@ -264,6 +265,8 @@ HABTMは避ける。関連自体に「いつ・どの役割で」を持てるよ
 - [ ] `post.rb` に全部 / 最初から `app/models/concerns/` → 関心ごとのモデル固有concern → 2モデル目で昇格
 - [ ] 横断concernを直接include → 同名のモデル固有concernを挟んで `include ::Xxx`
 - [ ] `has_and_belongs_to_many` → `has_many :through`（関連自体に「いつ・どの役割で」を持たせる）
+- [ ] PORO が `module_function` / `def call` / 状態を持つのに `self.` だけ / キーワード引数で主語1個
+      → `Xxx.new(主語).動詞`。クラスメソッドだけにするのは純粋関数・一回きりの生成・定数検索・`for` ファクトリの4用途（`logic-placement.md`）
 
 ### 状態を表すカラム（migration / schema も見る）
 - [ ] `archived` boolean / status に可逆トグル → 誰が・いつ要るなら `has_one :archival`。直交する状態は別カラム・別レコード
