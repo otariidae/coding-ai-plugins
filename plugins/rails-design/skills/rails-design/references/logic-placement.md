@@ -105,7 +105,7 @@ end
 
 ## PORO の書き方
 
-流派は分けない。**既定は `Xxx.new(主語).動詞`。** 状態の有無で判断しない
+`Xxx.new(主語).動詞` が基本。** 状態の有無で判断しない
 （状態が無くても `Opengraph::Fetch.new.fetch_document` のようにインスタンス化する）。
 
 ```ruby
@@ -156,7 +156,7 @@ end
 | 任意・既定値あり | キーワード（`new(now: Time.current)`, `new(user, filter, expanded: false)`） |
 | 3 個以上、または対等な 2 者で順序に意味が無い | キーワード（`new(invoice:, payment:)`, `new(account:, model:, attributes: nil)`） |
 
-受けたものは `attr_reader` で公開し、`@order, @event = order, event` の多重代入。持っているオブジェクトへは `delegate`。
+受けたものは `attr_reader` で公開。持っているオブジェクトへは `delegate`。
 
 **動詞メソッド名はクラス名の名詞に対応する素の動詞**（`Notifier#notify`, `Seeder#seed`, `Highlighter#highlight`）。
 `call` / `perform` / `execute` / `run` は使わない。
