@@ -1,0 +1,109 @@
+{
+  "skill_name": "rails-design",
+  "notes": "controllers.md「レスポンス」節の実効性を見る。eval-1/2 は指摘漏れ、eval-3 は誤指摘、eval-4〜6 は機構を変えても同じ指摘ができるかを見る。",
+  "evals": [
+    {
+      "id": 1,
+      "name": "response-definition-scattered",
+      "prompt": "app/controllers/api/recipes_controller.rb をレビューしてほしい。まずいところあったら教えて。",
+      "files": [
+        "fixtures/eval-1/app/controllers/api/recipes_controller.rb"
+      ],
+      "expected_output": "リソースの JSON 表現がコントローラ内で組み立てられ、show と index で重複し、キー変換も各アクションに散っている点を指摘する。",
+      "assertions": [
+        "リソースの JSON 表現がコントローラ内で組み立てられている点を指摘し、serializer かテンプレートなど1箇所に定義を寄せるよう提案している",
+        "同じ Recipe の表現が index / show / update でそれぞれ別に組まれている（重複・形が分岐している）ことに言及している",
+        "deep_transform_keys によるキー変換が各アクションに散っている点を指摘し、境界1箇所に寄せるよう提案している",
+        "update が updatedAt だけキャメルケース手書きで、他アクションと形が揃っていないことに触れている"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "empty-body-and-error-shape",
+      "prompt": "app/controllers/api/bookmarks_controller.rb をレビューして。",
+      "files": [
+        "fixtures/eval-2/app/controllers/api/bookmarks_controller.rb"
+      ],
+      "expected_output": "空ボディを render json で返している箇所を head に、認可 NG を head :forbidden に、単一フォーマットの respond_to を削除するよう提案する。",
+      "assertions": [
+        "destroy の `render json: {}` を `head :no_content` にするよう提案している",
+        "update の `render json: { success: true }` のような中身のないボディを head に置き換えるよう提案している",
+        "ensure_owner の認可 NG を `head :forbidden` にするよう提案している",
+        "index の respond_to が JSON 単一フォーマットのため不要である（暗黙レンダーで足りる）ことを指摘している",
+        "set_bookmark が `Bookmark.find` で全件から引いており、認可済みスコープ（Current.user.bookmarks）から find すべきことを指摘している"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "no-false-positive-on-correct-response",
+      "prompt": "この PR の差分をレビューしてほしい。app/controllers/api/playlists_controller.rb と config/routes.rb、それに app/views/api/playlists/ 配下を追加した。",
+      "files": [
+        "fixtures/eval-3/app/controllers/api/playlists_controller.rb",
+        "fixtures/eval-3/config/routes.rb",
+        "fixtures/eval-3/app/views/api/playlists/_playlist.json.jbuilder",
+        "fixtures/eval-3/app/views/api/playlists/show.json.jbuilder",
+        "fixtures/eval-3/app/views/api/playlists/index.json.jbuilder"
+      ],
+      "expected_output": "レスポンスの返し方は既に規約どおりなので指摘せず、routes の動詞アクション post :publish を名詞リソース化するよう指摘する。",
+      "assertions": [
+        "routes.rb の `post :publish`（member の動詞アクション）を指摘し、resource :publication のような名詞リソースへの置き換えを提案している",
+        "コントローラの publish アクションを Api::Playlists::PublicationsController#create 相当へ移す形を示している",
+        "レスポンスの組み立て方（show / index / create / destroy の返し方、_playlist.json.jbuilder への定義の寄せ方）を問題として指摘していない",
+        "`head :no_content` や `render :show, status: :created` を誤って問題扱いしていない"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "ams-split-definition",
+      "prompt": "app/controllers/api/lessons_controller.rb をレビューして。serializer 周りも見てほしい。",
+      "files": [
+        "fixtures/eval-4/app/controllers/api/lessons_controller.rb",
+        "fixtures/eval-4/app/serializers/lesson_serializer.rb",
+        "fixtures/eval-4/app/serializers/merchant_dashboard/lesson_serializer.rb"
+      ],
+      "expected_output": "serializer を使っていても定義が3箇所（LessonSerializer / MerchantDashboard::LessonSerializer / show のハッシュ手組み）に分裂している点を指摘する。",
+      "assertions": [
+        "show だけ serializer を通さずコントローラでハッシュを組み立てている点を指摘している",
+        "同じ Lesson に対して LessonSerializer と MerchantDashboard::LessonSerializer が属性を重複定義している点を指摘している",
+        "serializer を使っていること自体をもって「表現は1箇所」と誤判定していない（定義が分裂していることを問題として扱っている）",
+        "index / show / create / update が同じリソースに対して違う形を返していることに言及している"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "jb-template-camelize",
+      "prompt": "app/controllers/web/customers/carts_controller.rb と app/views/web/customers/carts/ 配下をレビューしてほしい。",
+      "files": [
+        "fixtures/eval-5/app/controllers/web/customers/carts_controller.rb",
+        "fixtures/eval-5/app/views/web/customers/carts/show.json.jb",
+        "fixtures/eval-5/app/views/web/customers/carts/index.json.jb",
+        "fixtures/eval-5/app/views/web/customers/carts/_item.json.jb"
+      ],
+      "expected_output": "jb テンプレートでも、show と index が別々に組まれ、キー変換規則が散っている点を指摘する。",
+      "assertions": [
+        "show.json.jb と index.json.jb が同じ Cart の表現を別々に組み立てている点を指摘している",
+        "キー変換が show では deep_camelize、index では手書きキャメルと規則が分かれている点を指摘している",
+        "index に shipping_fee と shippingFee が重複して入っている点に言及している",
+        "jbuilder でなく jb テンプレートであることを理由に指摘を回避していない"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "legacy-and-new-serializer",
+      "prompt": "クーポン API を新しく追加した。app/controllers/api/coupons_controller.rb と app/serializers/coupon_serializer.rb をレビューして。",
+      "files": [
+        "fixtures/eval-6/app/controllers/api/coupons_controller.rb",
+        "fixtures/eval-6/app/serializers/coupon_serializer.rb",
+        "fixtures/eval-6/app/serializers/application_legacy_serializer.rb",
+        "fixtures/eval-6/app/serializers/application_serializer.rb"
+      ],
+      "expected_output": "新規追加の CouponSerializer が「新規では使うな」と明記された legacy 基底を継承している点と、create / destroy が serializer を通していない点を指摘する。",
+      "assertions": [
+        "新規の CouponSerializer が ApplicationLegacySerializer を継承しており、基底クラスのコメントが示す方針（新規は ApplicationSerializer）に反している点を指摘している",
+        "create がコントローラでハッシュを手組みしており、CouponSerializer と表現が二重になっている点を指摘している",
+        "index / show（serializer 経由）と create（手組み）で同じ Coupon の形が違うことに言及している",
+        "destroy の `render json: { deleted: true }` に触れている"
+      ]
+    }
+  ]
+}
