@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+@carts.map do |cart|
+  {
+    id: cart.id,
+    itemCount: cart.items.size,
+    subtotal: cart.subtotal,
+    shipping_fee: cart.shipping_fee,
+    shippingFee: cart.shipping_fee,
+    total: cart.total,
+    updatedAt: cart.updated_at,
+  }
+end

@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+variation = item.variation
+
+{
+  id: variation.product.id,
+  name: variation.product.name,
+  variation: variation.name.presence,
+  variationId: variation.id,
+  price: variation.sales_price,
+  quantity: item.quantity,
+  subtotal: variation.sales_price * item.quantity,
+}

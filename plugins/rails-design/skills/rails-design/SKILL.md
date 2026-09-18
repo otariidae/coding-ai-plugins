@@ -256,6 +256,8 @@ HABTMは避ける。関連自体に「いつ・どの役割で」を持てるよ
 - [ ] 戻り値を無視した `save` / `update` → bang、または失敗を扱う `if`
 - [ ] `params.require(...).permit(...)` → `params.expect(...)`（Rails 8+）
 - [ ] アクション直下の `rescue => e` / `alert: e.message` → 書かない。出すなら固定文
+- [ ] `render json: { ... }` でリソースを組み立てている → 表現の定義を1箇所に置き、各アクションは通すだけにする
+- [ ] `camelize` / キー変換がアクションごとにある → 表現の定義と同じ1箇所へ
 
 ### app/models
 - [ ] `*Service` / `*Manager` / `*Handler` / `*Processor` / `*UseCase` / `app/services/`

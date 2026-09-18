@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+{
+  id: @cart.id,
+  items: render(partial: "web/customers/carts/item", collection: @cart.items, as: :item),
+  subtotal: @cart.subtotal,
+  shipping_fee: @cart.shipping_fee,
+  total: @cart.total,
+  coupon_code: @cart.coupon&.code,
+  updated_at: @cart.updated_at,
+}.deep_camelize
