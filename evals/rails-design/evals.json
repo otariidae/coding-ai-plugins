@@ -39,10 +39,10 @@
       "prompt": "この PR の差分をレビューしてほしい。app/controllers/api/playlists_controller.rb と config/routes.rb、それに app/views/api/playlists/ 配下を追加した。",
       "files": [
         "fixtures/eval-3/app/controllers/api/playlists_controller.rb",
-        "fixtures/eval-3/config/routes.rb",
         "fixtures/eval-3/app/views/api/playlists/_playlist.json.jbuilder",
+        "fixtures/eval-3/app/views/api/playlists/index.json.jbuilder",
         "fixtures/eval-3/app/views/api/playlists/show.json.jbuilder",
-        "fixtures/eval-3/app/views/api/playlists/index.json.jbuilder"
+        "fixtures/eval-3/config/routes.rb"
       ],
       "expected_output": "レスポンスの返し方は既に規約どおりなので指摘せず、routes の動詞アクション post :publish を名詞リソース化するよう指摘する。",
       "assertions": [
@@ -75,9 +75,9 @@
       "prompt": "app/controllers/web/customers/carts_controller.rb と app/views/web/customers/carts/ 配下をレビューしてほしい。",
       "files": [
         "fixtures/eval-5/app/controllers/web/customers/carts_controller.rb",
-        "fixtures/eval-5/app/views/web/customers/carts/show.json.jb",
+        "fixtures/eval-5/app/views/web/customers/carts/_item.json.jb",
         "fixtures/eval-5/app/views/web/customers/carts/index.json.jb",
-        "fixtures/eval-5/app/views/web/customers/carts/_item.json.jb"
+        "fixtures/eval-5/app/views/web/customers/carts/show.json.jb"
       ],
       "expected_output": "jb テンプレートでも、show と index が別々に組まれ、キー変換規則が散っている点を指摘する。",
       "assertions": [
@@ -93,9 +93,9 @@
       "prompt": "クーポン API を新しく追加した。app/controllers/api/coupons_controller.rb と app/serializers/coupon_serializer.rb をレビューして。",
       "files": [
         "fixtures/eval-6/app/controllers/api/coupons_controller.rb",
-        "fixtures/eval-6/app/serializers/coupon_serializer.rb",
         "fixtures/eval-6/app/serializers/application_legacy_serializer.rb",
-        "fixtures/eval-6/app/serializers/application_serializer.rb"
+        "fixtures/eval-6/app/serializers/application_serializer.rb",
+        "fixtures/eval-6/app/serializers/coupon_serializer.rb"
       ],
       "expected_output": "新規追加の CouponSerializer が「新規では使うな」と明記された legacy 基底を継承している点と、create / destroy が serializer を通していない点を指摘する。",
       "assertions": [
@@ -103,6 +103,204 @@
         "create がコントローラでハッシュを手組みしており、CouponSerializer と表現が二重になっている点を指摘している",
         "index / show（serializer 経由）と create（手組み）で同じ Coupon の形が違うことに言及している",
         "destroy の `render json: { deleted: true }` に触れている"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "state-modeling-retired-flag",
+      "prompt": "社内の勤怠管理アプリ作ってて、従業員が退職済みかどうかをモデルで持ちたい。employee.rb と schema.rb があって、いま add_retired_to_employees.rb ってマイグレーションを書きかけてる。あとで「いつ退職したか」とか「誰が手続きしたか」も画面に出したいって言われそうな気がしてるし、復職するケースもたまにあるらしい。このまま進めてええか見てほしい。",
+      "expected_output": "retired boolean ではなく退職を表すレコード（has_one :retirement 相当）を主案として提案する。誰が・いつ・固有の属性が要るならレコード、という判断軸を言語化し、復職（可逆・繰り返しうる）の扱いに触れる。書きかけ migration の boolean に null: false / default が無い点、retired 前提の scope :active の置き換えまで踏み込む。",
+      "files": [
+        "fixtures/eval-7/app/models/employee.rb",
+        "fixtures/eval-7/db/migrate/20260901120000_add_retired_to_employees.rb",
+        "fixtures/eval-7/db/schema.rb"
+      ],
+      "assertions": [
+        "boolean カラム単体ではなく、退職を表す別レコード（has_one :retirement 相当のイベントモデル）を主案として提案している",
+        "「誰が・いつ・固有の属性が要るならレコード」という判断軸を言語化している",
+        "復職（可逆なオン/オフ、繰り返しうる）を設計上どう扱うかに触れている",
+        "retired boolean を足す元の案をそのまま肯定して終わっていない",
+        "書きかけの migration の boolean に null: false と default が無い点に触れている",
+        "Employee#active スコープが retired カラム前提になっている点に触れ、レコード化した場合の置き換えを示している"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "logic-placement-order-confirmation",
+      "prompt": "EC サイトの注文確定処理を実装してます。order.rb と orders_controller.rb と routes.rb があって、いま app/services/order_confirmation_service.rb を書いてるところです（在庫を減らす → Stripe に課金する → 確認メールを送る）。Rails 的にはこの置き方で自然でしょうか？",
+      "expected_output": "app/services と *Service 命名を避け、主語モデルのメソッド（Order#confirm! 等）を第一候補に、PORO を置くなら app/models 配下と明示する。Stripe 課金は境界オブジェクトに閉じ、routes.rb の post :confirm は名詞リソース化する。あわせて一般品質として、トランザクション内の外部課金・メールの非同期化・冪等性ガード・在庫減算の排他制御にも触れる。",
+      "files": [
+        "fixtures/eval-8/app/controllers/orders_controller.rb",
+        "fixtures/eval-8/app/models/order.rb",
+        "fixtures/eval-8/app/services/order_confirmation_service.rb",
+        "fixtures/eval-8/config/routes.rb"
+      ],
+      "assertions": [
+        "app/services ディレクトリと *Service 命名を避けるよう明確に勧めている",
+        "主語になるモデルのメソッド（Order#confirm! 等）を第一候補として示している",
+        "PORO を置くなら app/models 配下、と場所を明示している",
+        "routes.rb の post :confirm を名詞リソース（resource :confirmation の create）にするよう指摘している",
+        "Stripe 課金を DB トランザクションの中で呼んでいる点を、ロールバック不整合のリスクとして指摘している",
+        "メール送信を deliver_later 等でトランザクション外・非同期に切り離すよう触れている",
+        "二重確定・二重課金を防ぐ冪等性のガード（confirmed? チェック / idempotency key 等）に触れている",
+        "decrement! による在庫減算に排他制御・在庫下限チェックが無い点に触れている"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "rest-controller-review",
+      "prompt": "このへんのコードをレビューしてほしい。routes.rb と posts_controller.rb と post.rb を置いてある。設計的に直したほうがええとこ教えて。",
+      "expected_output": "member の動詞アクションを名詞リソース（resource :publication の create/destroy）へ、toggle は 1 アクションにしない。published + published_at の二重表現、deleted / archived の boolean、HABTM → has_many :through、コントローラ内 transaction、rescue => e、params.expect、*Service の再配置、index が scope :visible を通っていない点、横断 concern の直接 include を指摘する。",
+      "files": [
+        "fixtures/eval-9/app/controllers/posts_controller.rb",
+        "fixtures/eval-9/app/models/post.rb",
+        "fixtures/eval-9/config/routes.rb",
+        "fixtures/eval-9/db/schema.rb"
+      ],
+      "assertions": [
+        "member の post :publish / :unpublish を名詞リソース（resource :publication の create/destroy）へ、と指摘している",
+        "toggle_featured を 1 アクションのトグルにしないよう指摘している",
+        "published boolean と published_at の二重表現を指摘している",
+        "deleted boolean の論理削除について、has_one :trashing 相当のレコード化か、本当に destroy するかの二択で指摘している",
+        "archived boolean について、誰が・いつが要るならレコード化（has_one :archival 相当）と指摘している",
+        "has_and_belongs_to_many を has_many :through にするよう指摘している",
+        "コントローラ内の ActiveRecord::Base.transaction をモデルへ移すよう指摘している",
+        "publish アクションの rescue => e / alert: e.message を否定している",
+        "params.require(...).permit(...) を params.expect(...) にするよう指摘している",
+        "NotifySubscribersService を主語モデルのメソッドか app/models の PORO へ、と指摘している",
+        "index が scope :visible を通さず Post.all を使っている点を指摘している",
+        "include Searchable（横断concern）の直接 include を、モデル固有 concern を挟む形にするよう指摘している"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "error-handling-payment-timeout",
+      "prompt": "決済 API 叩く処理を書いてるんやけど、タイムアウトとか 500 が返ってきたときのハンドリングで迷ってる。payment_client.rb と payments_controller.rb と charge_payment_job.rb と application_controller.rb と invoice.rb を置いてある。application_controller でコメントアウトしてる rescue_from StandardError を有効にして全部拾うのが楽かなと思ってるのと、ジョブは今 perform の中で rescue して retry_job してる。これでええかな？",
+      "expected_output": "ApplicationController の rescue_from StandardError を否定し、境界（PaymentClient）で外部例外を翻訳、例外クラスはオーナークラス内に定義、ジョブは retry_on / discard_on の宣言に置き換える。Invoice が paid boolean しか持たず失敗を記録できない点、HTTP ステータスを見ずに JSON.parse している点にも触れる。",
+      "files": [
+        "fixtures/eval-10/app/clients/payment_client.rb",
+        "fixtures/eval-10/app/controllers/application_controller.rb",
+        "fixtures/eval-10/app/controllers/payments_controller.rb",
+        "fixtures/eval-10/app/jobs/charge_payment_job.rb",
+        "fixtures/eval-10/app/models/invoice.rb"
+      ],
+      "assertions": [
+        "ApplicationController の rescue_from StandardError を有効にする案を明確に否定している",
+        "PaymentClient の中で Faraday 等の外部例外を捕まえ、生の例外を外に出さない方針を示している",
+        "例外クラスをオーナークラス（PaymentClient）の中に定義する（app/errors や ApplicationError 階層を作らない）案を示している",
+        "ChargePaymentJob の perform 内 rescue + retry_job を retry_on / discard_on の宣言に置き換えるよう勧めている",
+        "Invoice が paid boolean しか持たず失敗を記録できない点に触れ、失敗をデータで持つ／failed! してから raise する案を示している",
+        "「一時的な失敗は retry、恒久的な失敗は discard」という切り分け軸を示している",
+        "PaymentClient#charge が HTTP ステータスを見ずに JSON.parse しており、4xx/5xx が成功として扱われる点に触れている"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "recall-and-factual-accuracy",
+      "prompt": "経費申請まわりのコードをレビューしてほしい。routes.rb と application_controller.rb と expense_reports_controller.rb と expense_report.rb と schema.rb を置いてある。設計的に直したほうがええとこ教えて。認可・権限は別チームがやるんでスコープ外で。",
+      "expected_output": "渡された 5 ファイルすべてを走査し、理由コメントが付いている箇所（put :preview、requires_audit の三値、rescue_from）も Rails Way としては指摘した上で採否を読み手に委ねる。同時に、rescue_from の現在の挙動（to_error_response を持たない例外は再送出される）を誤って説明しない。",
+      "files": [
+        "fixtures/eval-11/app/controllers/application_controller.rb",
+        "fixtures/eval-11/app/controllers/expense_reports_controller.rb",
+        "fixtures/eval-11/app/models/expense_report.rb",
+        "fixtures/eval-11/config/routes.rb",
+        "fixtures/eval-11/db/schema.rb"
+      ],
+      "assertions": [
+        "member の post :approve / :reject を名詞リソース（resource :approval の create/destroy 等）へ、と指摘している",
+        "put :preview も名詞リソース（resource :preview）にするよう指摘している",
+        "approve アクションの ActiveRecord::Base.transaction と 20 行超のロジックをモデルへ移すよう指摘している",
+        "ApprovalNotificationService を主語モデルのメソッドか app/models の PORO へ、と指摘している",
+        "approved boolean と approved_at の二重表現を指摘している",
+        "visible_in_draft_list に null: false / default が無い点を指摘している",
+        "requires_audit の nullable boolean による三値表現を、enum や別カラムなど明示的な表現に置き換えるよう指摘している",
+        "params.require(...).permit(...) を params.expect(...) にするよう指摘している",
+        "reject アクションが update の戻り値を無視している点を指摘している",
+        "ApplicationController の rescue_from StandardError を設計判断として取り上げている（撤去・縮小を勧めるか、少なくとも論点として言及している）。application_controller.rb に一度も触れていなければ FAIL",
+        "【正確性】ApplicationController の rescue_from に言及している場合、その現在の挙動を誤って説明していない。to_error_response を持たない例外は raise error で再送出されるのに「全例外を握りつぶしている」「Sentry に飛ばなくなる」「404 も 500 に潰れる」等と述べていない。言及自体が無い場合は前段のアサーションで測るため、こちらは対象外とし PASS 扱いにする",
+        "【正確性】入力コードに実在しない不具合を指摘していない（存在しない関連・メソッド・カラムへの言及、コードが実際にしていない動作の断定が無い）"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "failure-state-and-swallowed-rescue",
+      "prompt": "督促メールの送信まわりを見てほしい。overdue_reminder_sender.rb と billing/client.rb と invoice.rb と send_overdue_reminders_job.rb と schema.rb を置いてある。最近「送ったはずの督促が届いてない」って問い合わせが来たんやけど、ログを見ても何が起きたのか分からへん。設計的にどう直すのがええ？",
+      "expected_output": "クラス名なしの裸 rescue が実装バグまで握りつぶし例外オブジェクトを捨てている点、reminder_email_sent boolean が未送信・失敗・成功を区別できない点、Billing::Client の例外が呼び出し側に漏れる点、API の受理と実配送を区別できていない点、ジョブが warn ログのみで成功扱いになる点を指摘する。",
+      "files": [
+        "fixtures/eval-12/app/jobs/send_overdue_reminders_job.rb",
+        "fixtures/eval-12/app/models/billing/client.rb",
+        "fixtures/eval-12/app/models/invoice.rb",
+        "fixtures/eval-12/app/models/overdue_reminder_sender.rb",
+        "fixtures/eval-12/db/schema.rb"
+      ],
+      "assertions": [
+        "クラス名なしの裸の rescue（例外クラスを指定しない rescue）が、実装バグまで含めて全部握りつぶしている点を指摘している",
+        "その rescue が例外オブジェクトを捨てており、ログにも Sentry にも何も残らない点を指摘している",
+        "reminder_email_sent boolean が「未送信」「送信失敗」「送信成功」を区別できない点を指摘し、状態をデータで持つ案（status enum / failure_reason / 送信履歴レコード等）を示している",
+        "Billing::Client が Faraday の例外を自前の型に翻訳せず境界の外へ出している点を問題として扱い、対処を示している（境界での自前例外への翻訳、例外種別ごとの分岐、retry_on / discard_on での分類のいずれでも可）",
+        "Billing::Client が raise_error 任せで、どの例外が飛ぶのかが呼び出し側から見えない点、または JSON.parse が非 JSON レスポンスで JSON::ParserError を投げうる点に触れている",
+        "「API がリクエストを受理したこと」と「実際にメールが配送されたこと」を区別できていない点に触れている（受理成功をもって reminder_email_sent を立てているため、配送失敗を検知できない）",
+        "OverdueReminderSender の *Sender 命名・PORO の位置づけについて、主語モデル（Invoice 等）のメソッドへ寄せるか app/models の PORO として妥当か、置き場の判断を示している",
+        "ジョブが失敗テンプレートを warn ログに出すだけでジョブ自体は成功扱いになっている点を指摘し、retry_on / discard_on か失敗レコード化を勧めている",
+        "current_contact_email がどこからも呼ばれていない点に触れ、かつその rescue => e が nil を返す形について、「連絡先未登録」と「通信エラー」と「実装バグ」が同じ nil に潰れると指摘している",
+        "already_sent? が first_notice のときしか送信済み判定をしておらず、second_notice / final_notice が毎回再送されうる点に触れている",
+        "【正確性】入力コードに実在しない不具合を指摘していない（存在しない関連・メソッド・カラムへの言及、コードが実際にしていない動作の断定が無い）"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "redundant-rescue-and-strategyless-raise",
+      "prompt": "備品貸出まわりのエラー処理を見てほしい。equipment_loan.rb / equipment_loan_registrar.rb / equipment_loan_form.rb / inventory/console_client.rb / admin/equipment_loan_cancellations_controller.rb / webhook/inventory_callbacks_controller.rb / sync_equipment_loans_job.rb を置いてある。書き足していったら rescue と raise だらけになってしまって、どこで何が処理されるのか自分でも追えなくなってきた。整理したい。",
+      "expected_output": "業務ルール違反の raise \"文字列\" を errors.add + falsy へ寄せ、受け手が無く 500 になる点を指摘する。RecordInvalid を独自 Error に包み直して 1 箇所だけで rescue する往復の不要さ、3 メソッドにコピペされた rescue 節、外側の rescue と重複する内側の begin、変換もログもしない no-op な再送出、全例外を握って head :no_content を返す点を指摘する。",
+      "files": [
+        "fixtures/eval-13/app/controllers/admin/equipment_loan_cancellations_controller.rb",
+        "fixtures/eval-13/app/controllers/webhook/inventory_callbacks_controller.rb",
+        "fixtures/eval-13/app/jobs/sync_equipment_loans_job.rb",
+        "fixtures/eval-13/app/models/equipment_loan.rb",
+        "fixtures/eval-13/app/models/equipment_loan_form.rb",
+        "fixtures/eval-13/app/models/equipment_loan_registrar.rb",
+        "fixtures/eval-13/app/models/inventory/console_client.rb"
+      ],
+      "assertions": [
+        "EquipmentLoan#request! / #cancel_before_shipment! が業務ルール違反を raise \"文字列\" で表現している点を否定し、errors.add + falsy や述語メソッドでの分岐を勧めている",
+        "その raise を呼び出し側の EquipmentLoanCancellationsController が一切 rescue しておらず、ユーザー向けの日本語メッセージが 500 になって誰にも読まれない点を指摘している",
+        "EquipmentLoanRegistrar が ActiveRecord::RecordInvalid を独自 Error に包み直し、EquipmentLoanForm ただ 1 箇所で rescue して errors.add に戻す往復が不要である点を指摘している",
+        "その包み直しで呼び出し側から元の例外の型が見えなくなり、RecordInvalid が持っていた record.errors が失われる点に触れている",
+        "Inventory::ConsoleClient の 3 メソッドに逐語コピペされた rescue 節の重複を指摘し、共通化を勧めている",
+        "Webhook::InventoryCallbacksController の内側 begin が、アクション末尾の rescue => e と重複していて不要である点を指摘している",
+        "その内側で raise \"文字列\" に変換していることに実質的な意味が無い（外側は結局 e.message をログするだけ）点を指摘している",
+        "SyncEquipmentLoansJob の rescue ActiveRecord::RecordNotFound => e; raise e が変換もログもしない no-op である点を指摘している",
+        "SyncEquipmentLoansJob が FetchError を裸の RuntimeError（raise \"文字列\"）に包み直しており、受け手が無くどこで処理されるか追えない点を指摘し、retry_on / discard_on の宣言に寄せるよう勧めている",
+        "Webhook::InventoryCallbacksController が全例外を握って head :no_content を返しており、失敗しても外部から成功に見える点を指摘している",
+        "【正確性】入力コードに実在しない不具合を指摘していない（存在しない関連・メソッド・カラムへの言及、コードが実際にしていない動作の断定が無い）"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "current-attributes-misuse",
+      "prompt": "会計の仕訳まわりを見てほしい。current.rb / ledger_entry.rb / account.rb / ledger_entries_controller.rb / recalculate_ledger_job.rb / bulk_import_entries_job.rb / schema.rb を置いてある。年度をリクエストごとに切り替えたいので Current に持たせたんやけど、最近「一覧の残高が合わない」「一括取り込みすると年度が入ってない仕訳ができる」って言われてて、どこがおかしいのか分からへん。設計的に見てほしい。",
+      "expected_output": "Current に認証コンテキスト以外のドメイン状態（fiscal_year / bulk_import）が入っている点、分離レベルをグローバル状態だけで決めている点、モデルが Current を直接読み引数で上書きできない点を指摘する。ジョブに Current が引き継がれないことが 2 つの症状（残高不一致・年度 nil の仕訳）の原因だと結びつけ、fiscal_year を引数として明示的に渡す形を提案する。",
+      "files": [
+        "fixtures/eval-14/app/controllers/ledger_entries_controller.rb",
+        "fixtures/eval-14/app/jobs/bulk_import_entries_job.rb",
+        "fixtures/eval-14/app/jobs/recalculate_ledger_job.rb",
+        "fixtures/eval-14/app/models/account.rb",
+        "fixtures/eval-14/app/models/current.rb",
+        "fixtures/eval-14/app/models/ledger_entry.rb",
+        "fixtures/eval-14/db/schema.rb"
+      ],
+      "assertions": [
+        "【A検出】Current に認証コンテキスト・リクエストメタ情報以外のドメイン状態（fiscal_year / bulk_import）が入っている点を、設計上の問題として指摘している",
+        "【A検出】Current#touch_account が処理中に属性を書き換えて蓄積していく点（ミュータブルな状態置き場になっている点）を指摘している",
+        "【A検出】LedgerEntry.isolation_level がトランザクション分離レベルをグローバル状態だけで決めており、引数で上書きできない点を指摘している",
+        "【A検出】scope :for_current_fiscal_year や post! がモデル内から Current を直接読んでおり、呼び出し側から値を渡せない形になっている点を指摘している",
+        "【D実バグ】RecalculateLedgerJob で Current.fiscal_year が引き継がれず、recalculate_balance! が fiscal_year: nil で集計してしまう点を指摘し、これが「残高が合わない」の原因だと結びつけている",
+        "【D実バグ】BulkImportEntriesJob が Current.fiscal_year を設定しないまま post! を呼ぶため、fiscal_year が nil の仕訳ができる点を指摘し、これが「年度が入ってない仕訳ができる」の原因だと結びつけている",
+        "【B提案】fiscal_year を Current から出し、ジョブやメソッドの引数として明示的に渡す形を提案している",
+        "【B提案】モデル側が Current を参照する場合でも、default: -> { Current.user } のようにデフォルト値として参照し引数で上書きできる形にするよう提案している",
+        "【C妥当性】提案したモデリングが入力コードと整合しており、Rails の API として成立している（schema.rb に無いカラムを既存前提にしていない、存在しないメソッドを呼んでいない。新規カラムの追加は「提案」と明示されていれば問題ない）",
+        "【適合率】default: -> { Current.user } というパターン自体を否定していない（スキルが許容する形であるため）",
+        "【C妥当性】提案が自己無矛盾である（Current からドメイン状態を除去する提案をしながら、その状態を読むメソッドのデフォルト引数をそのまま残して呼び出し側でも明示しない、といった内部矛盾が無い。提案どおり適用したときに挙動が意図せず変わらない）"
       ]
     }
   ]
