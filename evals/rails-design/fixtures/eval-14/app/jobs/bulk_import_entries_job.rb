@@ -9,7 +9,8 @@ class BulkImportEntriesJob < ApplicationJob
       entry = LedgerEntry.new(
         account_id: row["account_id"],
         amount: row["amount"],
-        memo: row["memo"]
+        memo: row["memo"],
+        created_by: upload.requested_by
       )
       entry.save!
       entry.post!

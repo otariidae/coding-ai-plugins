@@ -39,10 +39,10 @@
       "prompt": "この PR の差分をレビューしてほしい。app/controllers/api/playlists_controller.rb と config/routes.rb、それに app/views/api/playlists/ 配下を追加した。",
       "files": [
         "fixtures/eval-3/app/controllers/api/playlists_controller.rb",
-        "fixtures/eval-3/config/routes.rb",
         "fixtures/eval-3/app/views/api/playlists/_playlist.json.jbuilder",
+        "fixtures/eval-3/app/views/api/playlists/index.json.jbuilder",
         "fixtures/eval-3/app/views/api/playlists/show.json.jbuilder",
-        "fixtures/eval-3/app/views/api/playlists/index.json.jbuilder"
+        "fixtures/eval-3/config/routes.rb"
       ],
       "expected_output": "レスポンスの返し方は既に規約どおりなので指摘せず、routes の動詞アクション post :publish を名詞リソース化するよう指摘する。",
       "assertions": [
@@ -75,9 +75,9 @@
       "prompt": "app/controllers/web/customers/carts_controller.rb と app/views/web/customers/carts/ 配下をレビューしてほしい。",
       "files": [
         "fixtures/eval-5/app/controllers/web/customers/carts_controller.rb",
-        "fixtures/eval-5/app/views/web/customers/carts/show.json.jb",
+        "fixtures/eval-5/app/views/web/customers/carts/_item.json.jb",
         "fixtures/eval-5/app/views/web/customers/carts/index.json.jb",
-        "fixtures/eval-5/app/views/web/customers/carts/_item.json.jb"
+        "fixtures/eval-5/app/views/web/customers/carts/show.json.jb"
       ],
       "expected_output": "jb テンプレートでも、show と index が別々に組まれ、キー変換規則が散っている点を指摘する。",
       "assertions": [
@@ -93,9 +93,9 @@
       "prompt": "クーポン API を新しく追加した。app/controllers/api/coupons_controller.rb と app/serializers/coupon_serializer.rb をレビューして。",
       "files": [
         "fixtures/eval-6/app/controllers/api/coupons_controller.rb",
-        "fixtures/eval-6/app/serializers/coupon_serializer.rb",
         "fixtures/eval-6/app/serializers/application_legacy_serializer.rb",
-        "fixtures/eval-6/app/serializers/application_serializer.rb"
+        "fixtures/eval-6/app/serializers/application_serializer.rb",
+        "fixtures/eval-6/app/serializers/coupon_serializer.rb"
       ],
       "expected_output": "新規追加の CouponSerializer が「新規では使うな」と明記された legacy 基底を継承している点と、create / destroy が serializer を通していない点を指摘する。",
       "assertions": [
@@ -154,7 +154,8 @@
       "files": [
         "fixtures/eval-9/app/controllers/posts_controller.rb",
         "fixtures/eval-9/app/models/post.rb",
-        "fixtures/eval-9/config/routes.rb"
+        "fixtures/eval-9/config/routes.rb",
+        "fixtures/eval-9/db/schema.rb"
       ],
       "assertions": [
         "member の post :publish / :unpublish を名詞リソース（resource :publication の create/destroy）へ、と指摘している",
@@ -216,7 +217,7 @@
         "params.require(...).permit(...) を params.expect(...) にするよう指摘している",
         "reject アクションが update の戻り値を無視している点を指摘している",
         "ApplicationController の rescue_from StandardError を設計判断として取り上げている（撤去・縮小を勧めるか、少なくとも論点として言及している）。application_controller.rb に一度も触れていなければ FAIL",
-        "【正確性】その rescue_from の現在の挙動を誤って説明していない。to_error_response を持たない例外は raise error で再送出されるのに「全例外を握りつぶしている」「Sentry に飛ばなくなる」「404 も 500 に潰れる」等と述べていない（言及自体が無い場合もこのアサーションは FAIL）",
+        "【正確性】ApplicationController の rescue_from に言及している場合、その現在の挙動を誤って説明していない。to_error_response を持たない例外は raise error で再送出されるのに「全例外を握りつぶしている」「Sentry に飛ばなくなる」「404 も 500 に潰れる」等と述べていない。言及自体が無い場合は前段のアサーションで測るため、こちらは対象外とし PASS 扱いにする",
         "【正確性】入力コードに実在しない不具合を指摘していない（存在しない関連・メソッド・カラムへの言及、コードが実際にしていない動作の断定が無い）"
       ]
     },
@@ -236,12 +237,12 @@
         "クラス名なしの裸の rescue（例外クラスを指定しない rescue）が、実装バグまで含めて全部握りつぶしている点を指摘している",
         "その rescue が例外オブジェクトを捨てており、ログにも Sentry にも何も残らない点を指摘している",
         "reminder_email_sent boolean が「未送信」「送信失敗」「送信成功」を区別できない点を指摘し、状態をデータで持つ案（status enum / failure_reason / 送信履歴レコード等）を示している",
-        "Billing::Client の例外が呼び出し側にそのまま漏れる点を問題として扱い、対処を示している（境界での自前例外への翻訳、例外種別ごとの分岐、retry_on / discard_on での分類のいずれでも可）",
+        "Billing::Client が Faraday の例外を自前の型に翻訳せず境界の外へ出している点を問題として扱い、対処を示している（境界での自前例外への翻訳、例外種別ごとの分岐、retry_on / discard_on での分類のいずれでも可）",
         "Billing::Client が raise_error 任せで、どの例外が飛ぶのかが呼び出し側から見えない点、または JSON.parse が非 JSON レスポンスで JSON::ParserError を投げうる点に触れている",
         "「API がリクエストを受理したこと」と「実際にメールが配送されたこと」を区別できていない点に触れている（受理成功をもって reminder_email_sent を立てているため、配送失敗を検知できない）",
         "OverdueReminderSender の *Sender 命名・PORO の位置づけについて、主語モデル（Invoice 等）のメソッドへ寄せるか app/models の PORO として妥当か、置き場の判断を示している",
         "ジョブが失敗テンプレートを warn ログに出すだけでジョブ自体は成功扱いになっている点を指摘し、retry_on / discard_on か失敗レコード化を勧めている",
-        "current_contact_email の rescue => e が nil を返し、「連絡先未登録」と「通信エラー」と「実装バグ」が同じ nil に潰れる点を指摘している",
+        "current_contact_email がどこからも呼ばれていない点に触れ、かつその rescue => e が nil を返す形について、「連絡先未登録」と「通信エラー」と「実装バグ」が同じ nil に潰れると指摘している",
         "already_sent? が first_notice のときしか送信済み判定をしておらず、second_notice / final_notice が毎回再送されうる点に触れている",
         "【正確性】入力コードに実在しない不具合を指摘していない（存在しない関連・メソッド・カラムへの言及、コードが実際にしていない動作の断定が無い）"
       ]
@@ -264,7 +265,7 @@
         "EquipmentLoan#request! / #cancel_before_shipment! が業務ルール違反を raise \"文字列\" で表現している点を否定し、errors.add + falsy や述語メソッドでの分岐を勧めている",
         "その raise を呼び出し側の EquipmentLoanCancellationsController が一切 rescue しておらず、ユーザー向けの日本語メッセージが 500 になって誰にも読まれない点を指摘している",
         "EquipmentLoanRegistrar が ActiveRecord::RecordInvalid を独自 Error に包み直し、EquipmentLoanForm ただ 1 箇所で rescue して errors.add に戻す往復が不要である点を指摘している",
-        "その包み直しで元の例外の型・backtrace・バリデーション詳細（record.errors）を失っている点に触れている",
+        "その包み直しで呼び出し側から元の例外の型が見えなくなり、RecordInvalid が持っていた record.errors が失われる点に触れている",
         "Inventory::ConsoleClient の 3 メソッドに逐語コピペされた rescue 節の重複を指摘し、共通化を勧めている",
         "Webhook::InventoryCallbacksController の内側 begin が、アクション末尾の rescue => e と重複していて不要である点を指摘している",
         "その内側で raise \"文字列\" に変換していることに実質的な意味が無い（外側は結局 e.message をログするだけ）点を指摘している",
@@ -298,8 +299,7 @@
         "【B提案】fiscal_year を Current から出し、ジョブやメソッドの引数として明示的に渡す形を提案している",
         "【B提案】モデル側が Current を参照する場合でも、default: -> { Current.user } のようにデフォルト値として参照し引数で上書きできる形にするよう提案している",
         "【C妥当性】提案したモデリングが入力コードと整合しており、Rails の API として成立している（schema.rb に無いカラムを既存前提にしていない、存在しないメソッドを呼んでいない。新規カラムの追加は「提案」と明示されていれば問題ない）",
-        "【適合率】default: -> { Current.user } というパターン自体を否定していない（スキルが許容する形であるため）。ただし BulkImportEntriesJob が created_by を渡さず Current.user も nil になるため created_by_id の NOT NULL 制約に触れる、という指摘は正当なので減点対象にしない",
-        "【D実バグ】BulkImportEntriesJob が LedgerEntry.new に created_by を渡さず、ジョブ内では Current.user も nil になるため、created_by_id の NOT NULL 制約に違反して save! が落ちる点を指摘している",
+        "【適合率】default: -> { Current.user } というパターン自体を否定していない（スキルが許容する形であるため）",
         "【C妥当性】提案が自己無矛盾である（Current からドメイン状態を除去する提案をしながら、その状態を読むメソッドのデフォルト引数をそのまま残して呼び出し側でも明示しない、といった内部矛盾が無い。提案どおり適用したときに挙動が意図せず変わらない）"
       ]
     }

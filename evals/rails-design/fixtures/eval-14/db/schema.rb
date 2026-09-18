@@ -22,9 +22,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_10_120000) do
   end
 
   create_table "ledger_uploads", force: :cascade do |t|
+    t.bigint "requested_by_id", null: false
     t.jsonb "rows", default: [], null: false
     t.datetime "imported_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["requested_by_id"], name: "index_ledger_uploads_on_requested_by_id"
   end
 end
